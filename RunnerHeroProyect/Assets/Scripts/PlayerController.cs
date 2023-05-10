@@ -1,85 +1,87 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+
 
 public class PlayerController : MonoBehaviour
 {
-    public float jumpForce = 1.5f;
-    public float jumpTime = 0.3f;
+
+    // Player movement stats
+
+    [SerializeField] private CharacterStatsScriptableObject characterStats;
+
+    private bool isJumping;
+    private float jumpCounter;
+
     private float jumpTimeCounter;
+    private Vector2 gravity;
 
-    private bool isJumping = false;
-    private bool isOnAir = false;
     private Rigidbody2D rb;
+    public Transform groundCheck;
+    public LayerMask groundMask;
 
-    // Event to handle everything when the player dies
-    public delegate void PlayerDeadHandler();
-    public static event PlayerDeadHandler OnPlayerDead;
-    private bool isAlive;
-
-    // Start is called before the first frame update
-    void Start()
+    private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
-        jumpTimeCounter = jumpTime;
-        isAlive = true;
     }
-
-    // Update is called once per frame
-    
-    private void Die()
-    {
-        isAlive = false;
-        Destroy(gameObject);
-        OnPlayerDead?.Invoke();
-    }
-
-    public bool isPlayerAlive()
-    {
-        return isAlive;
+    // Start is called before the first frame update
+    void Start()
+    {  
+        isJumping = false;
+        gravity = new Vector2(0, -Physics2D.gravity.y);
     }
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Space) && !isOnAir)
+        // Player Jump
+        if (Input.GetButtonDown("Jump") && isGrounded())
         {
-            rb.velocity = new Vector2(rb.velocity.x, jumpForce);
+            rb.velocity = new Vector2(rb.velocity.x, characterStats.jumpForce);
             isJumping = true;
-            isOnAir = true;
-            jumpTimeCounter = jumpTime;
+            jumpCounter = 0;
         }
 
-        if (Input.GetKey(KeyCode.Space) && isJumping)
-        {
-            if (jumpTimeCounter > 0)
-            {
-                rb.velocity = new Vector2(rb.velocity.x, jumpForce);
-                jumpTimeCounter -= Time.deltaTime;
-            }
-           
-        }
-
-        if (Input.GetKeyUp(KeyCode.Space))
+        // Player stopped jumping
+        if (Input.GetButtonUp("Jump"))
         {
             isJumping = false;
+            jumpCounter = 0;
+
+            // If the player stoped jumping but the speed is still positive, then in every update frame the speed will decay 40%
+            if( rb.velocity.y > 0)
+            {
+                rb.velocity = new Vector2(rb.velocity.x, rb.velocity.y * 0.6f);
+            }
+
         }
     }
 
-    void OnCollisionEnter2D(Collision2D collision)
+    void FixedUpdate()
     {
-        if (collision.gameObject.tag == "Ground")
+        // Jump multiplier that depends on the player pressing jump button
+        if (rb.velocity.y > 0 && isJumping)
         {
-            isOnAir = false;
+            jumpCounter += Time.fixedDeltaTime;
+            if (jumpCounter > characterStats.jumpTime) isJumping = false;
+
+            float t = jumpCounter / characterStats.jumpTime;
+            float currentJump = characterStats.jumpMultiplier;
+
+            if (t > 0.5f)
+            {
+                currentJump = characterStats.jumpMultiplier * (1 - t);
+            }
+
+            rb.velocity += gravity * currentJump * Time.fixedDeltaTime;
         }
 
-        if (collision.gameObject.CompareTag("Obstacle"))
+        // Smoother fall of the player
+        if (rb.velocity.y < 0)
         {
-            Die();
+            rb.velocity -= gravity * characterStats.fallMultiplier * Time.fixedDeltaTime;
         }
-
     }
-
-
+    private bool isGrounded()
+    {
+        return Physics2D.OverlapCapsule(groundCheck.position, new Vector2(0.31f, 0.06f), CapsuleDirection2D.Horizontal, 0, groundMask);
+    }
 }
 
