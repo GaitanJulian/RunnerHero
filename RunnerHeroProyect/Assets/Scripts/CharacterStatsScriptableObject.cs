@@ -9,6 +9,8 @@ public class CharacterStatsScriptableObject : ScriptableObject
     public float moveSpeed;
     public float acceleration;
     public float deceleration;
+    public float airAcceleration;
+    public float airDeceleration;
 
     [Header("Jump sistem")]
     public float jumpForce;

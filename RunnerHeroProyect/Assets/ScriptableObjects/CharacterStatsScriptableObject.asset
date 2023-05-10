@@ -13,9 +13,11 @@ MonoBehaviour:
   m_Name: CharacterStatsScriptableObject
   m_EditorClassIdentifier: 
   characterName: maleHuman
-  moveSpeed: 4
-  acceleration: 20
-  deceleration: 20
+  moveSpeed: 150
+  acceleration: 2000
+  deceleration: 2000
+  airAcceleration: 15
+  airDeceleration: 2000
   jumpForce: 3
   fallMultiplier: 1.63
   jumpTime: 0.2

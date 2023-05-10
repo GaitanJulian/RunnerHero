@@ -13,9 +13,7 @@ public class PlayerController : MonoBehaviour
     public Transform groundCheck;
     public LayerMask groundMask;
 
-    private bool isMoving;
     private float moveInput;
-    private float moveDirection;
 
     private void Awake()
     {
@@ -45,7 +43,7 @@ public class PlayerController : MonoBehaviour
         {
             isJumping = false;
             jumpCounter = 0;
-
+            jumpBuffer = false;
             if (rb.velocity.y > 0)
             {
                 rb.velocity = new Vector2(rb.velocity.x, rb.velocity.y * 0.6f);
@@ -53,7 +51,6 @@ public class PlayerController : MonoBehaviour
         }
 
         moveInput = Input.GetAxisRaw("Horizontal");
-        isMoving = (moveInput != 0f);
     }
 
     void FixedUpdate()
@@ -80,29 +77,31 @@ public class PlayerController : MonoBehaviour
             rb.velocity -= gravity * characterStats.fallMultiplier * Time.fixedDeltaTime;
         }
 
-        moveDirection = moveInput * characterStats.moveSpeed;
+        // Apply horizontal movement
+        float targetVelocityX = moveInput * characterStats.moveSpeed;
+        float currentVelocityX = rb.velocity.x;
+        float acceleration = isGrounded() ? characterStats.acceleration : characterStats.airAcceleration;
+        float deceleration = isGrounded() ? characterStats.deceleration : characterStats.airDeceleration;
 
         // Apply acceleration or deceleration
-        float acceleration = isMoving ? characterStats.acceleration : characterStats.deceleration;
-        float deceleration = isMoving ? characterStats.deceleration : characterStats.acceleration;
-        float targetVelocityX = moveDirection;
-
-        if (targetVelocityX != 0f)
+        if (Mathf.Abs(targetVelocityX) > 0.1f)
         {
-            float currentVelocityX = rb.velocity.x;
-            float newVelocityX = Mathf.MoveTowards(currentVelocityX, targetVelocityX, acceleration * Time.fixedDeltaTime);
-            rb.velocity = new Vector2(newVelocityX, rb.velocity.y);
+            float velocityDiffX = targetVelocityX - currentVelocityX;
+            float accelX = Mathf.Clamp(velocityDiffX * acceleration, -acceleration, acceleration);
+            rb.AddForce(new Vector2(accelX, 0f));
         }
         else
         {
-            float currentVelocityX = rb.velocity.x;
-            float newVelocityX = Mathf.MoveTowards(currentVelocityX, 0f, deceleration * Time.fixedDeltaTime);
-            rb.velocity = new Vector2(newVelocityX, rb.velocity.y);
+            float decelX = Mathf.Sign(currentVelocityX) * deceleration;
+            rb.AddForce(new Vector2(decelX, 0f));
         }
+
     }
 
     private bool isGrounded()
     {
         return Physics2D.OverlapCapsule(groundCheck.position, new Vector2(0.31f, 0.06f), CapsuleDirection2D.Horizontal, 0, groundMask);
     }
+
+    
 }
