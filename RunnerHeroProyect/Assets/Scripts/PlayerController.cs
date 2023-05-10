@@ -1,16 +1,11 @@
 using UnityEngine;
-
-
 public class PlayerController : MonoBehaviour
 {
-
-    // Player movement stats
-
     [SerializeField] private CharacterStatsScriptableObject characterStats;
 
     private bool isJumping;
     private float jumpCounter;
-
+    private bool jumpBuffer;
     private float jumpTimeCounter;
     private Vector2 gravity;
 
@@ -18,49 +13,56 @@ public class PlayerController : MonoBehaviour
     public Transform groundCheck;
     public LayerMask groundMask;
 
+    private bool isMoving;
+    private float moveInput;
+    private float moveDirection;
+
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
     }
-    // Start is called before the first frame update
+
     void Start()
-    {  
+    {
         isJumping = false;
         gravity = new Vector2(0, -Physics2D.gravity.y);
     }
 
     void Update()
     {
-        // Player Jump
-        if (Input.GetButtonDown("Jump") && isGrounded())
+        if ((Input.GetButtonDown("Jump") || jumpBuffer) && isGrounded())
         {
             rb.velocity = new Vector2(rb.velocity.x, characterStats.jumpForce);
             isJumping = true;
             jumpCounter = 0;
+            jumpBuffer = false;
         }
 
-        // Player stopped jumping
+        if (Input.GetButtonDown("Jump") && !isGrounded())
+            jumpBuffer = true;
+
         if (Input.GetButtonUp("Jump"))
         {
             isJumping = false;
             jumpCounter = 0;
 
-            // If the player stoped jumping but the speed is still positive, then in every update frame the speed will decay 40%
-            if( rb.velocity.y > 0)
+            if (rb.velocity.y > 0)
             {
                 rb.velocity = new Vector2(rb.velocity.x, rb.velocity.y * 0.6f);
             }
-
         }
+
+        moveInput = Input.GetAxisRaw("Horizontal");
+        isMoving = (moveInput != 0f);
     }
 
     void FixedUpdate()
     {
-        // Jump multiplier that depends on the player pressing jump button
         if (rb.velocity.y > 0 && isJumping)
         {
             jumpCounter += Time.fixedDeltaTime;
-            if (jumpCounter > characterStats.jumpTime) isJumping = false;
+            if (jumpCounter > characterStats.jumpTime)
+                isJumping = false;
 
             float t = jumpCounter / characterStats.jumpTime;
             float currentJump = characterStats.jumpMultiplier;
@@ -73,15 +75,34 @@ public class PlayerController : MonoBehaviour
             rb.velocity += gravity * currentJump * Time.fixedDeltaTime;
         }
 
-        // Smoother fall of the player
         if (rb.velocity.y < 0)
         {
             rb.velocity -= gravity * characterStats.fallMultiplier * Time.fixedDeltaTime;
         }
+
+        moveDirection = moveInput * characterStats.moveSpeed;
+
+        // Apply acceleration or deceleration
+        float acceleration = isMoving ? characterStats.acceleration : characterStats.deceleration;
+        float deceleration = isMoving ? characterStats.deceleration : characterStats.acceleration;
+        float targetVelocityX = moveDirection;
+
+        if (targetVelocityX != 0f)
+        {
+            float currentVelocityX = rb.velocity.x;
+            float newVelocityX = Mathf.MoveTowards(currentVelocityX, targetVelocityX, acceleration * Time.fixedDeltaTime);
+            rb.velocity = new Vector2(newVelocityX, rb.velocity.y);
+        }
+        else
+        {
+            float currentVelocityX = rb.velocity.x;
+            float newVelocityX = Mathf.MoveTowards(currentVelocityX, 0f, deceleration * Time.fixedDeltaTime);
+            rb.velocity = new Vector2(newVelocityX, rb.velocity.y);
+        }
     }
+
     private bool isGrounded()
     {
         return Physics2D.OverlapCapsule(groundCheck.position, new Vector2(0.31f, 0.06f), CapsuleDirection2D.Horizontal, 0, groundMask);
     }
 }
-

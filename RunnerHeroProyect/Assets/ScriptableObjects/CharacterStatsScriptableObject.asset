@@ -12,7 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5d811fc3ffb77664fb14fd6402b3a66f, type: 3}
   m_Name: CharacterStatsScriptableObject
   m_EditorClassIdentifier: 
-  characterName: 
-  movementSpeed: 0
-  jumpHeight: 0
-  health: 0
+  characterName: maleHuman
+  moveSpeed: 4
+  acceleration: 20
+  deceleration: 20
+  jumpForce: 3
+  fallMultiplier: 1.63
+  jumpTime: 0.2
+  jumpMultiplier: 1.5
