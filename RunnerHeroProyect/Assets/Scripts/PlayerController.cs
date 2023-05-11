@@ -51,6 +51,7 @@ public class PlayerController : MonoBehaviour
         }
 
         moveInput = Input.GetAxisRaw("Horizontal");
+
     }
 
     void FixedUpdate()
@@ -78,24 +79,11 @@ public class PlayerController : MonoBehaviour
         }
 
         // Apply horizontal movement
-        float targetVelocityX = moveInput * characterStats.moveSpeed;
-        float currentVelocityX = rb.velocity.x;
-        float acceleration = isGrounded() ? characterStats.acceleration : characterStats.airAcceleration;
-        float deceleration = isGrounded() ? characterStats.deceleration : characterStats.airDeceleration;
-
-        // Apply acceleration or deceleration
-        if (Mathf.Abs(targetVelocityX) > 0.1f)
+        if (moveInput < -0.1f | moveInput > 0.1f) 
         {
-            float velocityDiffX = targetVelocityX - currentVelocityX;
-            float accelX = Mathf.Clamp(velocityDiffX * acceleration, -acceleration, acceleration);
-            rb.AddForce(new Vector2(accelX, 0f));
+            rb.AddForce(new Vector2(characterStats.moveSpeed * moveInput, 0), ForceMode2D.Impulse);
         }
-        else
-        {
-            float decelX = Mathf.Sign(currentVelocityX) * deceleration;
-            rb.AddForce(new Vector2(decelX, 0f));
-        }
-
+        
     }
 
     private bool isGrounded()
