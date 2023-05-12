@@ -1,4 +1,7 @@
 using UnityEngine;
+/// <summary>
+/// Controls the movement of the player character.
+/// </summary>
 public class PlayerController : MonoBehaviour
 {
     [SerializeField] private CharacterStatsScriptableObject characterStats;
@@ -6,7 +9,6 @@ public class PlayerController : MonoBehaviour
     private bool isJumping;
     private float jumpCounter;
     private bool jumpBuffer;
-    private float jumpTimeCounter;
     private Vector2 gravity;
 
     private Rigidbody2D rb;
@@ -28,6 +30,7 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        // Handles jumping logic
         if ((Input.GetButtonDown("Jump") || jumpBuffer) && isGrounded())
         {
             rb.velocity = new Vector2(rb.velocity.x, characterStats.jumpForce);
@@ -51,11 +54,11 @@ public class PlayerController : MonoBehaviour
         }
 
         moveInput = Input.GetAxisRaw("Horizontal");
-
     }
 
     void FixedUpdate()
     {
+        // Handles continuous jumping and falling
         if (rb.velocity.y > 0 && isJumping)
         {
             jumpCounter += Time.fixedDeltaTime;
@@ -79,17 +82,18 @@ public class PlayerController : MonoBehaviour
         }
 
         // Apply horizontal movement
-        if (moveInput < -0.1f | moveInput > 0.1f) 
+        if (Mathf.Abs(moveInput) > 0.1f)
         {
             rb.AddForce(new Vector2(characterStats.moveSpeed * moveInput, 0), ForceMode2D.Impulse);
         }
-        
     }
 
+    /// <summary>
+    /// Checks if the player is grounded.
+    /// </summary>
+    /// <returns><c>true</c> if the player is grounded; otherwise, <c>false</c>.</returns>
     private bool isGrounded()
     {
         return Physics2D.OverlapCapsule(groundCheck.position, new Vector2(0.31f, 0.06f), CapsuleDirection2D.Horizontal, 0, groundMask);
     }
-
-    
 }
