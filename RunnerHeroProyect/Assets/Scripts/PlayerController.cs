@@ -7,13 +7,13 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private CharacterStatsScriptableObject characterStats;
 
     private bool isJumping;
-    private float jumpCounter;
+    private float jumpCounter; // Handles how much extra time the player can jump to get extra height
     private bool jumpBuffer;
     private Vector2 gravity;
-
     private Rigidbody2D rb;
-    public Transform groundCheck;
-    public LayerMask groundMask;
+    public Transform groundCheck; // helps handling the isGrounded() method with an horizontal capsule draw at this positon
+    private Vector2 capsuleSize = new Vector2(0.31f, 0.06f); // Size obtained by visually measuring the capsule in the scene at the specified Trannsform
+    public LayerMask groundMask; // same as groundCheck
 
     private float moveInput;
 
@@ -39,6 +39,7 @@ public class PlayerController : MonoBehaviour
             jumpBuffer = false;
         }
 
+        // Handles a jump buffer for better UX
         if (Input.GetButtonDown("Jump") && !isGrounded())
             jumpBuffer = true;
 
@@ -47,9 +48,12 @@ public class PlayerController : MonoBehaviour
             isJumping = false;
             jumpCounter = 0;
             jumpBuffer = false;
+
+            // If the player Stops jumping then the speeds decay by the percentage specified
+
             if (rb.velocity.y > 0)
             {
-                rb.velocity = new Vector2(rb.velocity.x, rb.velocity.y * 0.6f);
+                rb.velocity = new Vector2(rb.velocity.x, rb.velocity.y * characterStats.jumpDecayPercentage);
             }
         }
 
@@ -58,16 +62,17 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
-        // Handles continuous jumping and falling
+        // Handles dynamic jumping and dynamic fall
         if (rb.velocity.y > 0 && isJumping)
         {
             jumpCounter += Time.fixedDeltaTime;
             if (jumpCounter > characterStats.jumpTime)
                 isJumping = false;
 
-            float t = jumpCounter / characterStats.jumpTime;
+            float t = jumpCounter / characterStats.jumpTime; // Normalized jump calcule
             float currentJump = characterStats.jumpMultiplier;
 
+            // If the jump is more than halfway through, then apply this formula to generate a more realistic jump
             if (t > 0.5f)
             {
                 currentJump = characterStats.jumpMultiplier * (1 - t);
@@ -81,11 +86,9 @@ public class PlayerController : MonoBehaviour
             rb.velocity -= gravity * characterStats.fallMultiplier * Time.fixedDeltaTime;
         }
 
-        // Apply horizontal movement
-        if (Mathf.Abs(moveInput) > 0.1f)
-        {
-            rb.AddForce(new Vector2(characterStats.moveSpeed * moveInput, 0), ForceMode2D.Impulse);
-        }
+        // Apply horizontal movement, if the player is not pressing any move key then the character stops
+        rb.velocity = new Vector2(moveInput * characterStats.moveSpeed, rb.velocity.y);
+
     }
 
     /// <summary>
@@ -94,6 +97,6 @@ public class PlayerController : MonoBehaviour
     /// <returns><c>true</c> if the player is grounded; otherwise, <c>false</c>.</returns>
     private bool isGrounded()
     {
-        return Physics2D.OverlapCapsule(groundCheck.position, new Vector2(0.31f, 0.06f), CapsuleDirection2D.Horizontal, 0, groundMask);
+        return Physics2D.OverlapCapsule(groundCheck.position, capsuleSize, CapsuleDirection2D.Horizontal, 0, groundMask);
     }
 }

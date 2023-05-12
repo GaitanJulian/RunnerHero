@@ -17,4 +17,5 @@ public class CharacterStatsScriptableObject : ScriptableObject
     public float fallMultiplier;
     public float jumpTime;
     public float jumpMultiplier;
+    public float jumpDecayPercentage;
 }
