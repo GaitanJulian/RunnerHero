@@ -13,7 +13,7 @@ public class PlayerController : MonoBehaviour
     private Rigidbody2D rb;
     public Transform groundCheck; // helps handling the isGrounded() method with an horizontal capsule draw at this positon
     private Vector2 capsuleSize = new Vector2(0.31f, 0.06f); // Size obtained by visually measuring the capsule in the scene at the specified Trannsform
-    public LayerMask groundMask; // same as groundCheck
+    public LayerMask groundMask; // Layer of the ground to detect whenever the player touch the ground
 
     private float moveInput;
 
