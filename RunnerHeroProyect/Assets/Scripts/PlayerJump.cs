@@ -1,18 +1,24 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 /// <summary>
 /// Controls the movement of the player character.
 /// </summary>
-public class PlayerController : MonoBehaviour
+public class PlayerJump : MonoBehaviour
 {
     [SerializeField] private CharacterStatsScriptableObject characterStats;
 
+    private PlayerInputActions playerControls;
+    private InputAction jump;
+
     private bool isJumping;
     private float jumpCounter; // Handles how much extra time the player can jump to get extra height
-    private bool jumpBuffer;
-    private Vector2 gravity;
+    private bool jumpBuffer; // to check if the player is using the buffer
+
+    private Vector2 gravity; // to operate easier with gravity
+
     private Rigidbody2D rb;
     public Transform groundCheck; // helps handling the isGrounded() method with an horizontal capsule draw at this positon
-    private Vector2 capsuleSize = new Vector2(0.31f, 0.06f); // Size obtained by visually measuring the capsule in the scene at the specified Trannsform
+    private Vector2 capsuleSize = new Vector2(0.31f, 0.06f); // Size obtained by visually measuring the capsule in the scene at the specified Transform
     public LayerMask groundMask; // Layer of the ground to detect whenever the player touch the ground
 
     private float moveInput;
@@ -20,6 +26,22 @@ public class PlayerController : MonoBehaviour
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+        playerControls = new PlayerInputActions();
+        jump = playerControls.Player.Jump;
+    }
+
+    private void OnEnable()
+    {
+        jump.Enable();
+        jump.performed += OnJumpPerformed;
+        jump.canceled += OnJumpCanceled;
+    }
+
+    private void OnDisable()
+    {
+        jump.Disable();
+        jump.performed -= OnJumpPerformed;
+        jump.canceled -= OnJumpCanceled;
     }
 
     void Start()
@@ -30,38 +52,33 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        // Handles jumping logic
-        if ((Input.GetButtonDown("Jump") || jumpBuffer) && isGrounded())
+        // Handles a jump buffer for better UX
+        if (jump.WasPerformedThisFrame() && !isGrounded())
+            jumpBuffer = true;
+    }
+
+    void FixedUpdate()
+    {
+        // Handles jump logic
+        if ((isJumping || jumpBuffer) && isGrounded())
         {
             rb.velocity = new Vector2(rb.velocity.x, characterStats.jumpForce);
-            isJumping = true;
             jumpCounter = 0;
             jumpBuffer = false;
         }
 
-        // Handles a jump buffer for better UX
-        if (Input.GetButtonDown("Jump") && !isGrounded())
-            jumpBuffer = true;
-
-        if (Input.GetButtonUp("Jump"))
+        if (!isJumping)
         {
-            isJumping = false;
             jumpCounter = 0;
             jumpBuffer = false;
 
-            // If the player Stops jumping then the speeds decay by the percentage specified
-
+            // If the player stops jumping, decay the vertical speed by the specified percentage
             if (rb.velocity.y > 0)
             {
                 rb.velocity = new Vector2(rb.velocity.x, rb.velocity.y * characterStats.jumpDecayPercentage);
             }
         }
 
-        moveInput = Input.GetAxisRaw("Horizontal");
-    }
-
-    void FixedUpdate()
-    {
         // Handles dynamic jumping and dynamic fall
         if (rb.velocity.y > 0 && isJumping)
         {
@@ -87,7 +104,7 @@ public class PlayerController : MonoBehaviour
         }
 
         // Apply horizontal movement, if the player is not pressing any move key then the character stops
-        rb.velocity = new Vector2(moveInput * characterStats.moveSpeed, rb.velocity.y);
+        // rb.velocity = new Vector2(moveInput * characterStats.moveSpeed, rb.velocity.y);
 
     }
 
@@ -99,4 +116,15 @@ public class PlayerController : MonoBehaviour
     {
         return Physics2D.OverlapCapsule(groundCheck.position, capsuleSize, CapsuleDirection2D.Horizontal, 0, groundMask);
     }
+
+    private void OnJumpPerformed(InputAction.CallbackContext context)
+    {
+        isJumping = true;
+    }
+
+    private void OnJumpCanceled(InputAction.CallbackContext context)
+    {
+        isJumping = false;
+    }
+
 }
