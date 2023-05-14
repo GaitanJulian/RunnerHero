@@ -10,6 +10,7 @@ public class PlayerJump : MonoBehaviour
     private PlayerInputActions playerControls;
     private InputAction jump;
 
+    private bool isJumpPressed;
     private bool isJumping;
     private float jumpCounter; // Handles how much extra time the player can jump to get extra height
     private bool jumpBuffer; // to check if the player is using the buffer
@@ -18,10 +19,8 @@ public class PlayerJump : MonoBehaviour
 
     private Rigidbody2D rb;
     public Transform groundCheck; // helps handling the isGrounded() method with an horizontal capsule draw at this positon
-    private Vector2 capsuleSize = new Vector2(0.31f, 0.06f); // Size obtained by visually measuring the capsule in the scene at the specified Transform
+    private Vector2 capsuleSize = new Vector2(0.65f, 0.17f); // Size obtained by visually measuring the capsule in the scene at the specified Transform
     public LayerMask groundMask; // Layer of the ground to detect whenever the player touch the ground
-
-    private float moveInput;
 
     private void Awake()
     {
@@ -34,19 +33,16 @@ public class PlayerJump : MonoBehaviour
     {
         jump = playerControls.Player.Jump;
         jump.Enable();
-        jump.performed += OnJumpPerformed;
-        jump.canceled += OnJumpCanceled;
     }
 
     private void OnDisable()
     {
         jump.Disable();
-        jump.performed -= OnJumpPerformed;
-        jump.canceled -= OnJumpCanceled;
     }
 
     void Start()
     {
+        isJumpPressed = false;
         isJumping = false;
         gravity = new Vector2(0, -Physics2D.gravity.y);
     }
@@ -54,24 +50,32 @@ public class PlayerJump : MonoBehaviour
     void Update()
     {
         // Handles a jump buffer for better UX
-        if (jump.WasPerformedThisFrame() && !isGrounded())
+        if (jump.WasPressedThisFrame() && !isGrounded())
             jumpBuffer = true;
+
+        if (jump.WasPressedThisFrame())
+            isJumpPressed = true;
+
+        if (jump.WasReleasedThisFrame())
+            isJumpPressed = false;
     }
 
     void FixedUpdate()
     {
         // Handles jump logic
-        if ((isJumping || jumpBuffer) && isGrounded())
+        if ((isJumpPressed || jumpBuffer) && isGrounded())
         {
+            isJumping = true;
             rb.velocity = new Vector2(rb.velocity.x, characterStats.jumpForce);
             jumpCounter = 0;
             jumpBuffer = false;
         }
 
-        if (!isJumping)
+        if (!isJumpPressed)
         {
             jumpCounter = 0;
             jumpBuffer = false;
+            isJumping = false;
 
             // If the player stops jumping, decay the vertical speed by the specified percentage
             if (rb.velocity.y > 0)
@@ -117,15 +121,4 @@ public class PlayerJump : MonoBehaviour
     {
         return Physics2D.OverlapCapsule(groundCheck.position, capsuleSize, CapsuleDirection2D.Horizontal, 0, groundMask);
     }
-
-    private void OnJumpPerformed(InputAction.CallbackContext context)
-    {
-        isJumping = true;
-    }
-
-    private void OnJumpCanceled(InputAction.CallbackContext context)
-    {
-        isJumping = false;
-    }
-
 }
