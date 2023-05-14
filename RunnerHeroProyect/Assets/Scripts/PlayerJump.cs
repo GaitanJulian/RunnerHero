@@ -27,11 +27,12 @@ public class PlayerJump : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
         playerControls = new PlayerInputActions();
-        jump = playerControls.Player.Jump;
+        
     }
 
     private void OnEnable()
     {
+        jump = playerControls.Player.Jump;
         jump.Enable();
         jump.performed += OnJumpPerformed;
         jump.canceled += OnJumpCanceled;
