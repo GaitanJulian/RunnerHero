@@ -16,8 +16,8 @@ MonoBehaviour:
   maxSpeed: 5
   acceleration: 20
   deceleration: 15
-  jumpForce: 4
-  fallMultiplier: 1.5
-  jumpTime: 0.2
+  jumpForce: 5
+  fallMultiplier: 2
+  jumpTime: 0.3
   jumpMultiplier: 1.5
   jumpDecayPercentage: 0.6
